@@ -59,7 +59,7 @@ public class SQLService {
         preparedStatementGetNicknameByLoginAndPassword = connection.prepareStatement("SELECT nickname FROM users WHERE nickname = ? AND password = ?;");
         preparedStatementGetNickname = connection.prepareStatement("SELECT nickname FROM users WHERE nickname = ?");
         preparedStatementRegistration = connection.prepareStatement("INSERT INTO users (nickname, password) VALUES (?, ?);");
-        preparedStatementSaveInformation = connection.prepareStatement("INSERT INTO messages (from, to, message, time) VALUES (?, ?, ?, ?);");
+        preparedStatementSaveInformation = connection.prepareStatement("INSERT INTO messages (from_nick, to_nick, message, time) VALUES (?, ?, ?, ?);");
     }
 
     public static String getNickname(String nickname) throws SQLException {

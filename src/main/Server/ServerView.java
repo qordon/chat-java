@@ -127,13 +127,6 @@ public class ServerView extends JFrame {
 
 
     protected int getPortFromOptionPane() {
-        while (true) {
-            String port = JOptionPane.showInputDialog(this, "Enter the server port:", "Server port input", JOptionPane.QUESTION_MESSAGE);
-            try {
-                return Integer.parseInt(port.trim());
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Incorrect server port entered. Try again.", "Server port input error", JOptionPane.ERROR_MESSAGE);
-            }
-        }
+        return Config.PORT;
     }
 }

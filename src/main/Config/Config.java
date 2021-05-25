@@ -4,6 +4,9 @@ public class Config {
     public static String CLIENT_TITLE = "Chat";
     public static String SERVER_TITLE = "Server";
 
+    public static String HOST = "localhost";
+    public static int PORT = 6666;
+
     public static int CLIENT_SIZE_WIDTH = 740;
     public static int CLIENT_SIZE_HEIGHT = 400;
 
