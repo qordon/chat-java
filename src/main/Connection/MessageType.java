@@ -2,7 +2,6 @@ package main.Connection;
 
 public enum MessageType {
     REQUEST_NICKNAME,
-    TEXT_MESSAGE,
     NICKNAME_ACCEPTED,
     NICKNAME,
     NICKNAME_USED,
