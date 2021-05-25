@@ -83,8 +83,7 @@ public class ServerController {
         System.out.println(message.getTextMessage());
         for (Map.Entry<String, Network> user : model.getAllUsersChat().entrySet()) {
             try {
-                String[] data = message.getTextMessage().split(" ");
-                if (user.getKey().equals(data[1])) {
+                if (user.getKey().equals(message.getFrom())) {
                     user.getValue().send(message);
                 }
             } catch (Exception e) {
@@ -134,20 +133,24 @@ public class ServerController {
             while (true) {
                 try {
                     Message message = network.receive();
-                    if (message.getTypeMessage() == MessageType.TEXT_MESSAGE) {
-                        sendMessage(nickname, message);
-                        SQLService.savingUserMessages(String.format("%s: %s\n", nickname, message.getTextMessage()));
-                    }
+//                    if (message.getTypeMessage() == MessageType.TEXT_MESSAGE) {
+//                        sendMessage(nickname, message);
+//                        SQLService.savingUserMessages(String.format("%s: %s\n", nickname, message.getTextMessage()));
+//                    }
                     if (message.getTypeMessage() == MessageType.PRIVATE_TEXT_MESSAGE) {
 //                        sendPrivateMessage(new Message(MessageType.PRIVATE_TEXT_MESSAGE, message.getTextMessage() + " " + nickname));
-                        sendPrivateMessage(new Message(MessageType.PRIVATE_TEXT_MESSAGE, message.getTextMessage()));
-                        SQLService.savingUserMessages("*" + message.getTextMessage() + " - (" + nickname + ")");
+//                        sendPrivateMessage(new Message(MessageType.PRIVATE_TEXT_MESSAGE, message.getTextMessage(),
+//                                                        message.getFrom(), message.getTo()));
+                        SQLService.savingUserMessages(message);
+                        sendPrivateMessage(message);
+//                        SQLService.savingUserMessages("*" + message.getTextMessage() + " - (" + nickname + ")");
+
                     }
-                    if (message.getTypeMessage() == MessageType.DISABLE_USER) {
-                        disableUser(nickname, network);
-                        SQLService.savingUserMessages((nickname + ": disconnected"));
-                        break;
-                    }
+//                    if (message.getTypeMessage() == MessageType.DISABLE_USER) {
+//                        disableUser(nickname, network);
+//                        SQLService.savingUserMessages((nickname + ": disconnected"));
+//                        break;
+//                    }
                 } catch (Exception e) {
                     gui.refreshDialogWindowServer(String.format("An error occurred while sending a message from the user %s, either disconnected!\n", nickname));
                     model.removeUser(nickname);
@@ -156,10 +159,6 @@ public class ServerController {
             }
         }
 
-        private void sendMessage(String nickname, Message message) {
-            String textMessage = String.format("%s: %s\n", nickname, message.getTextMessage());
-            sendMessageAllUsers(new Message(MessageType.TEXT_MESSAGE, textMessage));
-        }
 
         private void disableUser(String nickname, Network network) throws IOException {
             sendMessageAllUsers(new Message(MessageType.REMOVED_USER, nickname));

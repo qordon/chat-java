@@ -1,8 +1,10 @@
 package main.Database;
 
+import main.Connection.Message;
 import java.sql.*;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+
 
 public class SQLService {
     private static final String URL_CONNECTION_DATABASE = "jdbc:sqlite:src/main/Database/usersDatabase.db";
@@ -13,7 +15,6 @@ public class SQLService {
     private static PreparedStatement preparedStatementGetNicknameByLoginAndPassword;
     private static PreparedStatement preparedStatementGetNickname;
     private static PreparedStatement preparedStatementRegistration;
-    private static PreparedStatement preparedStatementChangeNick;
     private static PreparedStatement preparedStatementSaveInformation;
 
     private static boolean isConnected = false;
@@ -55,11 +56,10 @@ public class SQLService {
     }
 
     private static void prepareAllStatements() throws SQLException {
-        preparedStatementGetNicknameByLoginAndPassword = connection.prepareStatement("SELECT Nickname FROM users WHERE Nickname = ? AND Password = ?;");
-        preparedStatementGetNickname = connection.prepareStatement("SELECT Nickname FROM users WHERE Nickname = ?");
-        preparedStatementRegistration = connection.prepareStatement("INSERT INTO users (Nickname, Password) VALUES (?, ?);");
-        preparedStatementChangeNick = connection.prepareStatement("UPDATE users SET Nickname = ? WHERE Nickname = ?;");
-        preparedStatementSaveInformation = connection.prepareStatement("INSERT INTO users_messages (Messages, time) VALUES (?, ?);");
+        preparedStatementGetNicknameByLoginAndPassword = connection.prepareStatement("SELECT nickname FROM users WHERE nickname = ? AND password = ?;");
+        preparedStatementGetNickname = connection.prepareStatement("SELECT nickname FROM users WHERE nickname = ?");
+        preparedStatementRegistration = connection.prepareStatement("INSERT INTO users (nickname, password) VALUES (?, ?);");
+        preparedStatementSaveInformation = connection.prepareStatement("INSERT INTO messages (from, to, message, time) VALUES (?, ?, ?, ?);");
     }
 
     public static String getNickname(String nickname) throws SQLException {
@@ -92,23 +92,18 @@ public class SQLService {
         return true;
     }
 
-    public static boolean changeNick(String oldNickname, String newNickname) throws SQLException {
-        preparedStatementChangeNick.setString(1, newNickname);
-        preparedStatementChangeNick.setString(2, oldNickname);
-        preparedStatementChangeNick.executeUpdate();
-        return true;
-    }
 
-    public static void savingUserMessages(String message) throws SQLException {
-        preparedStatementSaveInformation.setString(1, message);
-        preparedStatementSaveInformation.setString(2, LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+    public static void savingUserMessages(Message message) throws SQLException {
+        preparedStatementSaveInformation.setString(1, message.getFrom());
+        preparedStatementSaveInformation.setString(2, message.getTo());
+        preparedStatementSaveInformation.setString(3, message.getTextMessage());
+        preparedStatementSaveInformation.setString(4, LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
         preparedStatementSaveInformation.executeUpdate();
     }
 
     public static void closeConnection() throws SQLException {
         preparedStatementRegistration.close();
         preparedStatementGetNicknameByLoginAndPassword.close();
-        preparedStatementChangeNick.close();
         connection.close();
         connection = null;
     }
