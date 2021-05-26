@@ -3,14 +3,12 @@ package main.Client;
 import main.Connection.Message;
 import main.Connection.MessageType;
 import main.Connection.Network;
-import main.Database.SQLService;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
-/**
- * @author Zurbaevi Nika
- */
 public class ClientController {
 
     private Network connection;
@@ -39,7 +37,7 @@ public class ClientController {
             try {
                 Message message = connection.receive();
                 if (message.getTypeMessage() == MessageType.REQUEST_NICKNAME) {
-                    connection.send(new Message(MessageType.NICKNAME, getNickname()));
+                    connection.send(new Message(MessageType.NICKNAME, nickname));
                 }
                 if (message.getTypeMessage() == MessageType.NICKNAME_USED) {
                     view.errorDialogWindow("A user with this name is already in the chat");
@@ -72,11 +70,15 @@ public class ClientController {
                 if (message.getTypeMessage() == MessageType.PRIVATE_TEXT_MESSAGE) {
                     processingOfPrivateMessagesForReceiving(message);
                 }
+                else if(message.getTypeMessage() == MessageType.DIALOG_HISTORY){
+                    System.out.println(message.getTextMessage());
+                    processOfDialogHistory(message);
+                }
                 if (message.getTypeMessage() == MessageType.USER_ADDED) {
-                    informAboutAddingNewUser(message);
+                    addUserOnServer(message);
                 }
                 if (message.getTypeMessage() == MessageType.REMOVED_USER) {
-                    informAboutDeletingNewUser(message);
+                    deleteUserFromServer(message);
                 }
             } catch (Exception e) {
                 view.errorDialogWindow("An error occurred while receiving a message from the server.");
@@ -87,6 +89,10 @@ public class ClientController {
         }
     }
 
+    private void processOfDialogHistory(Message message) {
+        view.addHistory(message.getTextMessage());
+    }
+
     public boolean isClientConnected() {
         return clientConnected;
     }
@@ -95,26 +101,29 @@ public class ClientController {
         this.clientConnected = clientConnected;
     }
 
-    protected void informAboutAddingNewUser(Message message) {
+    protected void addUserOnServer(Message message) {
         model.addUser(message.getTextMessage());
         view.refreshListUsers(model.getAllNickname());
-        view.addMessage(String.format("(%s) has joined the chat.\n", message.getTextMessage()));
     }
 
-    protected void informAboutDeletingNewUser(Message message) {
+    protected void deleteUserFromServer(Message message) {
         model.deleteUser(message.getTextMessage());
         view.refreshListUsers(model.getAllNickname());
-        view.addMessage(String.format("(%s) has left the chat.\n", message.getTextMessage()));
     }
 
     protected void processingOfPrivateMessagesForReceiving(Message message) {
-//        String[] data = message.getTextMessage().split(" ");
-//        StringBuilder mess = new StringBuilder();
-//        for (int i = 0; i < data.length - 1; i++)
-//        {
-//            mess.append(data[i]).append(" ");
-//        }
         view.addMessage(String.format("%s: %s\n", message.getFrom(), message.getTextMessage()));
+    }
+
+    protected void getHistory(String to){
+        try{
+            if(!nickname.equals(to)){
+                connection.send(new Message(MessageType.DIALOG_HISTORY, null, nickname, to));
+            }
+        }
+        catch (Exception e) {
+            view.errorDialogWindow("Error getting dialog history");
+        }
     }
 
     protected void disableClient() {
@@ -155,16 +164,12 @@ public class ClientController {
         this.nickname = nickname;
     }
 
-    public String getNickname(){
-        return this.nickname;
-    }
-
-
     protected void sendPrivateMessageOnServer(String userSelected, String text) {
         try {
             if (!nickname.equals(userSelected)) {
-                view.addMessage(String.format("You: %s\n", text));
-                connection.send(new Message(MessageType.PRIVATE_TEXT_MESSAGE, text, getNickname(), userSelected));
+                view.addMessage(String.format(nickname + ": %s\n", text));
+                connection.send(new Message(MessageType.PRIVATE_TEXT_MESSAGE, text, nickname,
+                                            userSelected, LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
             } else {
                 view.errorDialogWindow("You cannot send a private message to yourself");
             }

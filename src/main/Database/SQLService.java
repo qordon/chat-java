@@ -1,9 +1,12 @@
 package main.Database;
 
 import main.Connection.Message;
+import main.Connection.MessageType;
+
 import java.sql.*;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 
 
 public class SQLService {
@@ -16,6 +19,7 @@ public class SQLService {
     private static PreparedStatement preparedStatementGetNickname;
     private static PreparedStatement preparedStatementRegistration;
     private static PreparedStatement preparedStatementSaveInformation;
+    private static PreparedStatement statementGetDialogHistory;
 
     private static boolean isConnected = false;
 
@@ -60,6 +64,8 @@ public class SQLService {
         preparedStatementGetNickname = connection.prepareStatement("SELECT nickname FROM users WHERE nickname = ?");
         preparedStatementRegistration = connection.prepareStatement("INSERT INTO users (nickname, password) VALUES (?, ?);");
         preparedStatementSaveInformation = connection.prepareStatement("INSERT INTO messages (from_nick, to_nick, message, time) VALUES (?, ?, ?, ?);");
+        statementGetDialogHistory = connection.prepareStatement("SELECT from_nick, to_nick, message, time FROM messages " +
+                "WHERE (to_nick = ? AND from_nick = ?) OR (to_nick = ? AND from_nick = ?)");
     }
 
     public static String getNickname(String nickname) throws SQLException {
@@ -97,8 +103,24 @@ public class SQLService {
         preparedStatementSaveInformation.setString(1, message.getFrom());
         preparedStatementSaveInformation.setString(2, message.getTo());
         preparedStatementSaveInformation.setString(3, message.getTextMessage());
-        preparedStatementSaveInformation.setString(4, LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        preparedStatementSaveInformation.setString(4, message.getTime());
         preparedStatementSaveInformation.executeUpdate();
+    }
+
+    public static ArrayList<Message> getDialogHistory(Message message) throws SQLException {
+        statementGetDialogHistory.setString(1, message.getTo());
+        statementGetDialogHistory.setString(2, message.getFrom());
+        statementGetDialogHistory.setString(3, message.getFrom());
+        statementGetDialogHistory.setString(4, message.getTo());
+        ResultSet resultSet = statementGetDialogHistory.executeQuery();
+        ArrayList<Message> messages = new ArrayList<>();
+        while(resultSet.next()){
+            messages.add(new Message(MessageType.PRIVATE_TEXT_MESSAGE, resultSet.getString(3),
+                    resultSet.getString(1), resultSet.getString(2), resultSet.getString(4)));
+            System.out.println(messages.get(messages.size()-1).getTextMessage());
+            System.out.println("================");
+        }
+        return messages;
     }
 
     public static void closeConnection() throws SQLException {

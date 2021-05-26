@@ -8,6 +8,7 @@ import main.Database.SQLService;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -92,6 +93,18 @@ public class ServerController {
         }
     }
 
+    protected void sendDialogHistory(String history, String from){
+        for (Map.Entry<String, Network> user : model.getAllUsersChat().entrySet()) {
+            try {
+                if (user.getKey().equals(from)) {
+                    user.getValue().send(new Message(MessageType.DIALOG_HISTORY, history, from, null));
+                }
+            } catch (Exception e) {
+                gui.refreshDialogWindowServer("Error sending message to user!\n");
+            }
+        }
+    }
+
     public boolean isServerStart() {
         return isServerStart;
     }
@@ -136,6 +149,16 @@ public class ServerController {
                     if (message.getTypeMessage() == MessageType.PRIVATE_TEXT_MESSAGE) {
                         SQLService.savingUserMessages(message);
                         sendPrivateMessage(message);
+                    }
+                    else if(message.getTypeMessage() == MessageType.DIALOG_HISTORY){
+                        ArrayList<Message> messages = SQLService.getDialogHistory(message);
+                        StringBuilder output = new StringBuilder();
+
+                        for(Message mess : messages){
+                            output.append("[").append(mess.getTime()).append("] ").append(mess.getFrom()).append(": ").append(mess.getTextMessage()).append("\n");
+                        }
+
+                        sendDialogHistory(output.toString(), nickname);
                     }
                 } catch (Exception e) {
                     gui.refreshDialogWindowServer(String.format("An error occurred while sending a message from the user %s, either disconnected!\n", nickname));

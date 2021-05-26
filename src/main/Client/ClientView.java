@@ -127,6 +127,7 @@ public class ClientView extends JFrame {
                 super.mouseClicked(e);
                 JList list = (JList)e.getSource();
                 System.out.println(list.getSelectedValue());
+                client.getHistory((String)list.getSelectedValue());
 
             }
         });
@@ -244,6 +245,11 @@ public class ClientView extends JFrame {
 
     protected void addMessage(String text) {
         textAreaChatLog.append("[" + LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "] " + text);
+    }
+
+    protected void addHistory(String text){
+        textAreaChatLog.setText(null);
+        textAreaChatLog.append(text);
     }
 
     protected void refreshListUsers(Set<String> allUserNicknames) {
