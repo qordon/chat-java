@@ -83,11 +83,11 @@ public class ServerController {
         System.out.println(message.getTextMessage());
         for (Map.Entry<String, Network> user : model.getAllUsersChat().entrySet()) {
             try {
-                if (user.getKey().equals(message.getFrom())) {
+                if (user.getKey().equals(message.getTo())) {
                     user.getValue().send(message);
                 }
             } catch (Exception e) {
-                gui.refreshDialogWindowServer("Error sending message to all users!\n");
+                gui.refreshDialogWindowServer("Error sending message to user!\n");
             }
         }
     }
@@ -133,24 +133,10 @@ public class ServerController {
             while (true) {
                 try {
                     Message message = network.receive();
-//                    if (message.getTypeMessage() == MessageType.TEXT_MESSAGE) {
-//                        sendMessage(nickname, message);
-//                        SQLService.savingUserMessages(String.format("%s: %s\n", nickname, message.getTextMessage()));
-//                    }
                     if (message.getTypeMessage() == MessageType.PRIVATE_TEXT_MESSAGE) {
-//                        sendPrivateMessage(new Message(MessageType.PRIVATE_TEXT_MESSAGE, message.getTextMessage() + " " + nickname));
-//                        sendPrivateMessage(new Message(MessageType.PRIVATE_TEXT_MESSAGE, message.getTextMessage(),
-//                                                        message.getFrom(), message.getTo()));
                         SQLService.savingUserMessages(message);
                         sendPrivateMessage(message);
-//                        SQLService.savingUserMessages("*" + message.getTextMessage() + " - (" + nickname + ")");
-
                     }
-//                    if (message.getTypeMessage() == MessageType.DISABLE_USER) {
-//                        disableUser(nickname, network);
-//                        SQLService.savingUserMessages((nickname + ": disconnected"));
-//                        break;
-//                    }
                 } catch (Exception e) {
                     gui.refreshDialogWindowServer(String.format("An error occurred while sending a message from the user %s, either disconnected!\n", nickname));
                     model.removeUser(nickname);

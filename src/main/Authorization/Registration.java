@@ -54,7 +54,9 @@ public class Registration extends JDialog{
 
         buttonRegistration.addActionListener(e -> {
             try {
-                if (checkUserInputPasswordAndNickname(getNickname(), getPassword()) && authenticate(getNickname(), getPassword())) {
+                boolean validFields = checkUserInputPasswordAndNickname(getNickname(), getPassword());
+                System.out.println(validFields);
+                if (validFields && authenticate(getNickname(), getPassword())) {
                     JOptionPane.showMessageDialog(Registration.this, "You have successfully registration.", "Registration", JOptionPane.INFORMATION_MESSAGE);
                     succeeded = true;
                     dispose();
