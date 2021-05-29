@@ -9,5 +9,6 @@ public enum MessageType {
     DISABLE_USER,
     REMOVED_USER,
     PRIVATE_TEXT_MESSAGE,
-    DIALOG_HISTORY
+    DIALOG_HISTORY,
+    ALL_USERS
 }

@@ -4,8 +4,6 @@ import main.Connection.Message;
 import main.Connection.MessageType;
 
 import java.sql.*;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 
 
@@ -16,10 +14,11 @@ public class SQLService {
     private static Connection connection;
 
     private static PreparedStatement preparedStatementGetNicknameByLoginAndPassword;
-    private static PreparedStatement preparedStatementGetNickname;
-    private static PreparedStatement preparedStatementRegistration;
-    private static PreparedStatement preparedStatementSaveInformation;
+    private static PreparedStatement statementGetNickname;
+    private static PreparedStatement statementRegistration;
+    private static PreparedStatement statementSaveInformation;
     private static PreparedStatement statementGetDialogHistory;
+    private static PreparedStatement statementGetAllUsers;
 
     private static boolean isConnected = false;
 
@@ -61,17 +60,19 @@ public class SQLService {
 
     private static void prepareAllStatements() throws SQLException {
         preparedStatementGetNicknameByLoginAndPassword = connection.prepareStatement("SELECT nickname FROM users WHERE nickname = ? AND password = ?;");
-        preparedStatementGetNickname = connection.prepareStatement("SELECT nickname FROM users WHERE nickname = ?");
-        preparedStatementRegistration = connection.prepareStatement("INSERT INTO users (nickname, password) VALUES (?, ?);");
-        preparedStatementSaveInformation = connection.prepareStatement("INSERT INTO messages (from_nick, to_nick, message, time) VALUES (?, ?, ?, ?);");
+        statementGetNickname = connection.prepareStatement("SELECT nickname FROM users WHERE nickname = ?");
+        statementRegistration = connection.prepareStatement("INSERT INTO users (nickname, password) VALUES (?, ?);");
+        statementSaveInformation = connection.prepareStatement("INSERT INTO messages (from_nick, to_nick, message, time) VALUES (?, ?, ?, ?);");
         statementGetDialogHistory = connection.prepareStatement("SELECT from_nick, to_nick, message, time FROM messages " +
                 "WHERE (to_nick = ? AND from_nick = ?) OR (to_nick = ? AND from_nick = ?)");
+        statementGetAllUsers = connection.prepareStatement("SELECT nickname FROM users");
+
     }
 
     public static String getNickname(String nickname) throws SQLException {
         String nick = null;
-        preparedStatementGetNickname.setString(1, nickname);
-        ResultSet resultSet = preparedStatementGetNickname.executeQuery();
+        statementGetNickname.setString(1, nickname);
+        ResultSet resultSet = statementGetNickname.executeQuery();
         if (resultSet.next()) {
             nick = resultSet.getString(1);
         }
@@ -92,19 +93,27 @@ public class SQLService {
     }
 
     public static boolean registration(String nickname, String password) throws SQLException {
-        preparedStatementRegistration.setString(1, nickname);
-        preparedStatementRegistration.setString(2, password);
-        preparedStatementRegistration.executeUpdate();
+        statementRegistration.setString(1, nickname);
+        statementRegistration.setString(2, password);
+        statementRegistration.executeUpdate();
         return true;
     }
 
-
     public static void savingUserMessages(Message message) throws SQLException {
-        preparedStatementSaveInformation.setString(1, message.getFrom());
-        preparedStatementSaveInformation.setString(2, message.getTo());
-        preparedStatementSaveInformation.setString(3, message.getTextMessage());
-        preparedStatementSaveInformation.setString(4, message.getTime());
-        preparedStatementSaveInformation.executeUpdate();
+        statementSaveInformation.setString(1, message.getFrom());
+        statementSaveInformation.setString(2, message.getTo());
+        statementSaveInformation.setString(3, message.getTextMessage());
+        statementSaveInformation.setString(4, message.getTime());
+        statementSaveInformation.executeUpdate();
+    }
+
+    public static String getAllUsers() throws SQLException {
+        ResultSet resultSet = statementGetAllUsers.executeQuery();
+        StringBuilder text = new StringBuilder();
+        while(resultSet.next()){
+            text.append(resultSet.getString(1)).append("\n");
+        }
+        return text.toString();
     }
 
     public static ArrayList<Message> getDialogHistory(Message message) throws SQLException {
@@ -124,7 +133,7 @@ public class SQLService {
     }
 
     public static void closeConnection() throws SQLException {
-        preparedStatementRegistration.close();
+        statementRegistration.close();
         preparedStatementGetNicknameByLoginAndPassword.close();
         connection.close();
         connection = null;

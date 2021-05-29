@@ -44,11 +44,11 @@ public class ServerController {
     protected void stopServer() {
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
-                for (Map.Entry<String, Network> user : model.getAllUsersChat().entrySet()) {
+                for (Map.Entry<String, Network> user : model.getUsersOnline().entrySet()) {
                     user.getValue().close();
                 }
                 serverSocket.close();
-                model.getAllUsersChat().clear();
+                model.getUsersOnline().clear();
                 isServerStart = false;
                 gui.refreshDialogWindowServer("Server stopped.\n");
             } else {
@@ -71,7 +71,7 @@ public class ServerController {
     }
 
     protected void sendMessageAllUsers(Message message) {
-        for (Map.Entry<String, Network> user : model.getAllUsersChat().entrySet()) {
+        for (Map.Entry<String, Network> user : model.getUsersOnline().entrySet()) {
             try {
                 user.getValue().send(message);
             } catch (Exception e) {
@@ -82,7 +82,7 @@ public class ServerController {
 
     protected void sendPrivateMessage(Message message) {
         System.out.println(message.getTextMessage());
-        for (Map.Entry<String, Network> user : model.getAllUsersChat().entrySet()) {
+        for (Map.Entry<String, Network> user : model.getUsersOnline().entrySet()) {
             try {
                 if (user.getKey().equals(message.getTo())) {
                     user.getValue().send(message);
@@ -94,7 +94,7 @@ public class ServerController {
     }
 
     protected void sendDialogHistory(String history, String from){
-        for (Map.Entry<String, Network> user : model.getAllUsersChat().entrySet()) {
+        for (Map.Entry<String, Network> user : model.getUsersOnline().entrySet()) {
             try {
                 if (user.getKey().equals(from)) {
                     user.getValue().send(new Message(MessageType.DIALOG_HISTORY, history, from, null));
@@ -123,14 +123,15 @@ public class ServerController {
                     connection.send(new Message(MessageType.REQUEST_NICKNAME));
                     Message responseMessage = connection.receive();
                     String nickname = responseMessage.getTextMessage();
-                    if (responseMessage.getTypeMessage() == MessageType.NICKNAME && nickname != null && !nickname.isEmpty() && !model.getAllUsersChat().containsKey(nickname)) {
-                        model.addUser(nickname, connection);
+                    if (responseMessage.getTypeMessage() == MessageType.NICKNAME && nickname != null && !nickname.isEmpty() && !model.getUsersOnline().containsKey(nickname)) {
+                        model.addUserToOnline(nickname, connection);
                         Set<String> listUsers = new HashSet<>();
-                        for (Map.Entry<String, Network> users : model.getAllUsersChat().entrySet()) {
+                        for (Map.Entry<String, Network> users : model.getUsersOnline().entrySet()) {
                             listUsers.add(users.getKey());
                         }
                         connection.send(new Message(MessageType.NICKNAME_ACCEPTED, listUsers));
                         sendMessageAllUsers(new Message(MessageType.USER_ADDED, nickname));
+                        connection.send(new Message(MessageType.ALL_USERS, SQLService.getAllUsers()));
                         return nickname;
                     } else {
                         connection.send(new Message(MessageType.NICKNAME_USED));
@@ -162,7 +163,7 @@ public class ServerController {
                     }
                 } catch (Exception e) {
                     gui.refreshDialogWindowServer(String.format("An error occurred while sending a message from the user %s, either disconnected!\n", nickname));
-                    model.removeUser(nickname);
+                    model.removeUserFromOnline(nickname);
                     break;
                 }
             }
@@ -171,7 +172,7 @@ public class ServerController {
 
         private void disableUser(String nickname, Network network) throws IOException {
             sendMessageAllUsers(new Message(MessageType.REMOVED_USER, nickname));
-            model.removeUser(nickname);
+            model.removeUserFromOnline(nickname);
             network.close();
             gui.refreshDialogWindowServer(String.format("Remote access user %s disconnected.\n", socket.getRemoteSocketAddress()));
         }

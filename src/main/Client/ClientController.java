@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.net.Socket;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public class ClientController {
 
@@ -46,7 +49,7 @@ public class ClientController {
                 }
                 if (message.getTypeMessage() == MessageType.NICKNAME_ACCEPTED) {
                     view.addMessage(String.format("Your name is accepted (%s)\n", nickname));
-                    model.setUsers(message.getListUsers());
+                    model.setUsersOnline(message.getListUsers());
                     break;
                 }
             } catch (Exception e) {
@@ -56,7 +59,7 @@ public class ClientController {
                     connection.close();
                     clientConnected = false;
                     break;
-                } catch (IOException ex) {
+                } catch (IOException exception) {
                     view.errorDialogWindow("Error closing connection");
                 }
             }
@@ -74,16 +77,20 @@ public class ClientController {
                     System.out.println(message.getTextMessage());
                     processOfDialogHistory(message);
                 }
-                if (message.getTypeMessage() == MessageType.USER_ADDED) {
-                    addUserOnServer(message);
+                else if(message.getTypeMessage() == MessageType.ALL_USERS){
+                    System.out.println(message.getTextMessage());
+                    addAllUsers(message);
                 }
-                if (message.getTypeMessage() == MessageType.REMOVED_USER) {
-                    deleteUserFromServer(message);
+                else if (message.getTypeMessage() == MessageType.USER_ADDED) {
+                    addUserToOnline(message);
+                }
+                else if (message.getTypeMessage() == MessageType.REMOVED_USER) {
+                    deleteUserFromOnline(message);
                 }
             } catch (Exception e) {
                 view.errorDialogWindow("An error occurred while receiving a message from the server.");
                 setClientConnected(false);
-                view.refreshListUsers(model.getAllNickname());
+                view.refreshListUsers(model.getUsersOnline());
                 break;
             }
         }
@@ -101,14 +108,22 @@ public class ClientController {
         this.clientConnected = clientConnected;
     }
 
-    protected void addUserOnServer(Message message) {
-        model.addUser(message.getTextMessage());
-        view.refreshListUsers(model.getAllNickname());
+    protected void addAllUsers(Message message){
+        String[] strings = message.getTextMessage().split("\n");
+        Set<String> users = (new HashSet(Arrays.asList(strings)));
+        users.remove(nickname);
+        model.setAllUsers(users);
+        view.refreshListUsers(model.getAllUsers());
     }
 
-    protected void deleteUserFromServer(Message message) {
-        model.deleteUser(message.getTextMessage());
-        view.refreshListUsers(model.getAllNickname());
+    protected void addUserToOnline(Message message) {
+        model.addUserToOnline(message.getTextMessage());
+//        view.refreshListUsers(model.getUsersOnline());
+    }
+
+    protected void deleteUserFromOnline(Message message) {
+        model.removeUserFromOnline(message.getTextMessage());
+//        view.refreshListUsers(model.getUsersOnline());
     }
 
     protected void processingOfPrivateMessagesForReceiving(Message message) {
@@ -130,9 +145,9 @@ public class ClientController {
         try {
             if (clientConnected) {
                 connection.send(new Message(MessageType.DISABLE_USER));
-                model.getAllNickname().clear();
+                model.getUsersOnline().clear();
                 clientConnected = false;
-                view.refreshListUsers(model.getAllNickname());
+                view.refreshListUsers(model.getUsersOnline());
                 view.addMessage("You have disconnected from the server.\n");
             } else {
                 view.errorDialogWindow("You are already disconnected.");
@@ -177,7 +192,6 @@ public class ClientController {
             view.errorDialogWindow("Error sending message");
         }
     }
-
 
     public boolean isDatabaseConnected() {
         return isDatabaseConnected;
