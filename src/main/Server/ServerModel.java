@@ -5,25 +5,25 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class ServerModel {
-    private final Map<String, Network> allUsers = new HashMap<>();
+    private final Map<String, Network> usersOnline = new HashMap<>();
 
-    protected Map<String, Network> getAllUsersChat() {
-        return allUsers;
+    protected Map<String, Network> getUsersOnline() {
+        return usersOnline;
     }
 
     protected String getName(String nickname) {
-        return allUsers.get(nickname).toString();
+        return usersOnline.get(nickname).toString();
     }
 
     protected Network getConnection(String nickname) {
-        return allUsers.get(nickname);
+        return usersOnline.get(nickname);
     }
 
-    protected void addUser(String nickname, Network connection) {
-        allUsers.put(nickname, connection);
+    protected void addUserToOnline(String nickname, Network connection) {
+        usersOnline.put(nickname, connection);
     }
 
-    protected void removeUser(String nickname) {
-        allUsers.remove(nickname);
+    protected void removeUserFromOnline(String nickname) {
+        usersOnline.remove(nickname);
     }
 }

@@ -58,13 +58,6 @@ public class ServerView extends JFrame {
         });
         setLocationRelativeTo(null);
 
-        try {
-            setIconImage(ImageIO.read(new File(Config.SERVER_ICON_IMAGE)));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        buttonStartServer.setIcon(new ImageIcon(Config.IMAGE_ICON_START_SERVER));
         buttonStartServer.setText("Start server");
         buttonStartServer.addActionListener(e -> {
             server.startServer(getPortFromOptionPane());
@@ -74,7 +67,6 @@ public class ServerView extends JFrame {
             }
         });
 
-        buttonStopServer.setIcon(new ImageIcon(Config.IMAGE_ICON_STOP_SERVER));
         buttonStopServer.setText("Stop server");
         buttonStopServer.setEnabled(false);
         buttonStopServer.addActionListener(e -> {

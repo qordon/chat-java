@@ -1,12 +1,14 @@
 package main.Connection;
 
 import java.io.Serializable;
+import java.time.LocalTime;
 import java.util.Set;
 
 public class Message implements Serializable{
     private final MessageType typeMessage;
     private String from;
     private String to;
+    private String time;
     private final String textMessage;
     private final Set<String> listUsers;
 
@@ -16,8 +18,16 @@ public class Message implements Serializable{
         this.listUsers = null;
     }
 
-    public Message(MessageType typeMessage, String textMessage, String from, String to) {
+    public Message(MessageType typeMessage, String textMessage, String from, String to, String time) {
         this.textMessage = textMessage;
+        this.typeMessage = typeMessage;
+        this.from = from;
+        this.to = to;
+        this.time = time;
+        this.listUsers = null;
+    }
+    public Message(MessageType typeMessage, String text, String from, String to) {
+        this.textMessage = text;
         this.typeMessage = typeMessage;
         this.from = from;
         this.to = to;
@@ -36,11 +46,6 @@ public class Message implements Serializable{
         this.listUsers = null;
     }
 
-    public Message(MessageType typeMessage, String[] text) {
-        this.typeMessage = typeMessage;
-        this.textMessage = text[0] + " " + text[1];
-        this.listUsers = null;
-    }
 
     public MessageType getTypeMessage() {
         return typeMessage;
@@ -56,6 +61,10 @@ public class Message implements Serializable{
 
     public String getTo() {
         return to;
+    }
+
+    public String getTime(){
+        return time;
     }
 
     public String getTextMessage() {

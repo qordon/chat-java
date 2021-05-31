@@ -5,12 +5,9 @@ import main.Authorization.Registration;
 import main.Database.SQLService;
 import main.Config.Config;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.File;
-import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -80,13 +77,6 @@ public class ClientView extends JFrame {
         });
         setLocationRelativeTo(null);
 
-        try {
-            setIconImage(ImageIO.read(new File(Config.CLIENT_ICON_IMAGE)));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        buttonSend.setIcon(new ImageIcon(Config.IMAGE_ICON_SEND_MESSAGE));
         buttonSend.setText("Send");
         buttonSend.setToolTipText("Send message");
         buttonSend.setEnabled(false);
@@ -127,19 +117,19 @@ public class ClientView extends JFrame {
                 super.mouseClicked(e);
                 JList list = (JList)e.getSource();
                 System.out.println(list.getSelectedValue());
-
+                client.getHistory((String)list.getSelectedValue());
             }
         });
 
         textAreaChatLog.setEditable(false);
         textAreaChatLog.setColumns(Config.TEXT_AREA_CHAT_LOG_COLUMNS);
         textAreaChatLog.setRows(Config.TEXT_AREA_CHAT_LOG_ROWS);
-        textAreaChatLog.setToolTipText("Chat log");
+        textAreaChatLog.setToolTipText("Chat");
         textAreaChatLog.setFont(new Font(Config.TEXT_AREA_CHAT_LOG_FONT_NAME, Font.PLAIN, Config.TEXT_AREA_CHAT_LOG_FONT_SIZE));
         scrollPanelForChatLog.setViewportView(textAreaChatLog);
 
         buttonRegistration.setText("Registration");
-        buttonRegistration.setToolTipText("Database registration");
+        buttonRegistration.setToolTipText("Registration");
         buttonRegistration.addActionListener(e -> {
             if (!client.isDatabaseConnected()) {
                 Registration registration = new Registration(this);
@@ -150,9 +140,8 @@ public class ClientView extends JFrame {
             }
         });
 
-        //        buttonConnectionToServer.setIcon(new ImageIcon(Config.IMAGE_ICON_CONNECTION));
-        buttonSignIn.setText("Connect");
-        buttonSignIn.setToolTipText("Connect to server");
+        buttonSignIn.setText("Log in");
+        buttonSignIn.setToolTipText("Log in");
         buttonSignIn.setEnabled(true);
         buttonSignIn.addActionListener(e -> {
             if (!client.isDatabaseConnected()) {
@@ -162,7 +151,7 @@ public class ClientView extends JFrame {
                     client.setNickname(loginDialog.getNickname());
                     client.setDatabaseConnected(true);
 
-                    client.connectToServer();
+                    client.connectClient();
                     if (client.isClientConnected()) {
                         buttonSignOut.setEnabled(true);
                         buttonSignIn.setEnabled(false);
@@ -174,15 +163,12 @@ public class ClientView extends JFrame {
             }
         });
 
-
-//        buttonDisconnectToServer.setIcon(new ImageIcon(Config.IMAGE_ICON_DISCONNECT));
-        buttonSignOut.setText("Disconnect");
-        buttonSignOut.setToolTipText("Disconnect to server");
+        buttonSignOut.setText("Log out");
+        buttonSignOut.setToolTipText("Log out");
         buttonSignOut.setEnabled(false);
         buttonSignOut.addActionListener(e -> {
             if (client.isClientConnected()) {
                 client.disableClient();
-//                if (!client.isClientConnected()) {
                 buttonSignIn.setEnabled(true);
                 buttonSignOut.setEnabled(false);
                 textFieldUserInputMessage.setEnabled(false);
@@ -191,11 +177,9 @@ public class ClientView extends JFrame {
                     client.setDatabaseConnected(false);
                     buttonRegistration.setEnabled(true);
                 }
-
-//                }
             }
         });
-//test
+
         GroupLayout layout = new GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -206,13 +190,14 @@ public class ClientView extends JFrame {
                                         .addComponent(buttonSend, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                         .addComponent(textFieldUserInputMessage)
                                         .addGroup(GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                                .addComponent(scrollPanelForChatLog)
+
                                                 .addGap(5, 5, 5)
                                                 .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING, false)
                                                         .addComponent(buttonSignOut, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                                         .addComponent(buttonSignIn, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                                         .addComponent(buttonRegistration, GroupLayout.DEFAULT_SIZE, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                                        .addComponent(scrollPanelForUserListOnline, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE))))
+                                                        .addComponent(scrollPanelForUserListOnline, GroupLayout.PREFERRED_SIZE, 120, GroupLayout.PREFERRED_SIZE))
+                                                .addComponent(scrollPanelForChatLog)))
                                 .addGap(5, 5, 5))
         );
         layout.setVerticalGroup(
@@ -233,9 +218,6 @@ public class ClientView extends JFrame {
                                 .addComponent(textFieldUserInputMessage, GroupLayout.PREFERRED_SIZE, GroupLayout.DEFAULT_SIZE, GroupLayout.PREFERRED_SIZE)
                                 .addGap(5, 5, 5)
                                 .addComponent(buttonSend)
-//                                .addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-//                                        .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-//                                                .addComponent(buttonSend)))
                                 .addGap(5, 5, 5))
         );
         pack();
@@ -244,6 +226,11 @@ public class ClientView extends JFrame {
 
     protected void addMessage(String text) {
         textAreaChatLog.append("[" + LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "] " + text);
+    }
+
+    protected void addHistory(String text){
+        textAreaChatLog.setText(null);
+        textAreaChatLog.append(text);
     }
 
     protected void refreshListUsers(Set<String> allUserNicknames) {
@@ -275,5 +262,9 @@ public class ClientView extends JFrame {
         JOptionPane.showMessageDialog(this, text, "Error", JOptionPane.ERROR_MESSAGE);
     }
 
+    public void disableClient() {
+        setTitle(Config.CLIENT_TITLE);
+        textAreaChatLog.setText("");
+    }
 }
 

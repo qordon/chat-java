@@ -1,16 +1,18 @@
 package main.Client;
 
+import main.Config.Config;
 import main.Connection.Message;
 import main.Connection.MessageType;
 import main.Connection.Network;
-import main.Database.SQLService;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
-/**
- * @author Zurbaevi Nika
- */
 public class ClientController {
 
     private Network connection;
@@ -39,16 +41,15 @@ public class ClientController {
             try {
                 Message message = connection.receive();
                 if (message.getTypeMessage() == MessageType.REQUEST_NICKNAME) {
-                    connection.send(new Message(MessageType.NICKNAME, getNickname()));
+                    connection.send(new Message(MessageType.NICKNAME, nickname));
                 }
                 if (message.getTypeMessage() == MessageType.NICKNAME_USED) {
-                    view.errorDialogWindow("A user with this name is already in the chat");
+                    view.errorDialogWindow("A user with this name is already sign in!");
                     disableClient();
                     break;
                 }
                 if (message.getTypeMessage() == MessageType.NICKNAME_ACCEPTED) {
-                    view.addMessage(String.format("Your name is accepted (%s)\n", nickname));
-                    model.setUsers(message.getListUsers());
+                    model.setUsersOnline(message.getListUsers());
                     break;
                 }
             } catch (Exception e) {
@@ -58,7 +59,7 @@ public class ClientController {
                     connection.close();
                     clientConnected = false;
                     break;
-                } catch (IOException ex) {
+                } catch (IOException exception) {
                     view.errorDialogWindow("Error closing connection");
                 }
             }
@@ -72,19 +73,30 @@ public class ClientController {
                 if (message.getTypeMessage() == MessageType.PRIVATE_TEXT_MESSAGE) {
                     processingOfPrivateMessagesForReceiving(message);
                 }
-                if (message.getTypeMessage() == MessageType.USER_ADDED) {
-                    informAboutAddingNewUser(message);
+                else if(message.getTypeMessage() == MessageType.DIALOG_HISTORY){
+                    System.out.println(message.getTextMessage());
+                    processOfDialogHistory(message);
                 }
-                if (message.getTypeMessage() == MessageType.REMOVED_USER) {
-                    informAboutDeletingNewUser(message);
+                else if(message.getTypeMessage() == MessageType.ALL_USERS){
+                    addAllUsers(message);
+                }
+                else if (message.getTypeMessage() == MessageType.USER_ADDED) {
+                    addUserToOnline(message);
+                }
+                else if (message.getTypeMessage() == MessageType.REMOVED_USER) {
+                    deleteUserFromOnline(message);
                 }
             } catch (Exception e) {
                 view.errorDialogWindow("An error occurred while receiving a message from the server.");
                 setClientConnected(false);
-                view.refreshListUsers(model.getAllNickname());
+                view.refreshListUsers(model.getUsersOnline());
                 break;
             }
         }
+    }
+
+    private void processOfDialogHistory(Message message) {
+        view.addHistory(message.getTextMessage());
     }
 
     public boolean isClientConnected() {
@@ -95,36 +107,46 @@ public class ClientController {
         this.clientConnected = clientConnected;
     }
 
-    protected void informAboutAddingNewUser(Message message) {
-        model.addUser(message.getTextMessage());
-        view.refreshListUsers(model.getAllNickname());
-        view.addMessage(String.format("(%s) has joined the chat.\n", message.getTextMessage()));
+    protected void addAllUsers(Message message){
+        String[] strings = message.getTextMessage().split("\n");
+        Set<String> users = new HashSet(Arrays.asList(strings));
+        users.remove(nickname);
+        model.setAllUsers(users);
+        view.refreshListUsers(model.getAllUsers());
     }
 
-    protected void informAboutDeletingNewUser(Message message) {
-        model.deleteUser(message.getTextMessage());
-        view.refreshListUsers(model.getAllNickname());
-        view.addMessage(String.format("(%s) has left the chat.\n", message.getTextMessage()));
+    protected void addUserToOnline(Message message) {
+        model.addUserToOnline(message.getTextMessage());
+    }
+
+    protected void deleteUserFromOnline(Message message) {
+        model.removeUserFromOnline(message.getTextMessage());
     }
 
     protected void processingOfPrivateMessagesForReceiving(Message message) {
-//        String[] data = message.getTextMessage().split(" ");
-//        StringBuilder mess = new StringBuilder();
-//        for (int i = 0; i < data.length - 1; i++)
-//        {
-//            mess.append(data[i]).append(" ");
-//        }
         view.addMessage(String.format("%s: %s\n", message.getFrom(), message.getTextMessage()));
+    }
+
+    protected void getHistory(String to){
+        try{
+            if(!nickname.equals(to)){
+                connection.send(new Message(MessageType.DIALOG_HISTORY, null, nickname, to));
+            }
+        }
+        catch (Exception e) {
+            view.errorDialogWindow("Error getting dialog history");
+        }
     }
 
     protected void disableClient() {
         try {
             if (clientConnected) {
                 connection.send(new Message(MessageType.DISABLE_USER));
-                model.getAllNickname().clear();
+                model.getUsersOnline().clear();
                 clientConnected = false;
-                view.refreshListUsers(model.getAllNickname());
-                view.addMessage("You have disconnected from the server.\n");
+                view.refreshListUsers(model.getUsersOnline());
+                view.disableClient();
+
             } else {
                 view.errorDialogWindow("You are already disconnected.");
             }
@@ -133,16 +155,16 @@ public class ClientController {
         }
     }
 
-    protected void connectToServer() {
+    protected void connectClient() {
         if (!clientConnected) {
             while (true) {
                 try {
                     connection = new Network(new Socket(view.getServerAddress(), view.getPort()));
                     clientConnected = true;
-                    view.addMessage("You have connected to the server.\n");
+                    view.setTitle(Config.CLIENT_TITLE +  " (" + nickname + ")");
                     break;
                 } catch (Exception e) {
-                    view.errorDialogWindow("An error has occurred! Perhaps you entered the wrong server address or port. try again");
+                    view.errorDialogWindow("Server doesn't work!");
                     break;
                 }
             }
@@ -155,16 +177,12 @@ public class ClientController {
         this.nickname = nickname;
     }
 
-    public String getNickname(){
-        return this.nickname;
-    }
-
-
     protected void sendPrivateMessageOnServer(String userSelected, String text) {
         try {
             if (!nickname.equals(userSelected)) {
-                view.addMessage(String.format("You: %s\n", text));
-                connection.send(new Message(MessageType.PRIVATE_TEXT_MESSAGE, text, getNickname(), userSelected));
+                view.addMessage(String.format(nickname + ": %s\n", text));
+                connection.send(new Message(MessageType.PRIVATE_TEXT_MESSAGE, text, nickname,
+                                            userSelected, LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss"))));
             } else {
                 view.errorDialogWindow("You cannot send a private message to yourself");
             }
@@ -172,7 +190,6 @@ public class ClientController {
             view.errorDialogWindow("Error sending message");
         }
     }
-
 
     public boolean isDatabaseConnected() {
         return isDatabaseConnected;
