@@ -1,5 +1,6 @@
 package main.Client;
 
+import main.Config.Config;
 import main.Connection.Message;
 import main.Connection.MessageType;
 import main.Connection.Network;
@@ -43,12 +44,11 @@ public class ClientController {
                     connection.send(new Message(MessageType.NICKNAME, nickname));
                 }
                 if (message.getTypeMessage() == MessageType.NICKNAME_USED) {
-                    view.errorDialogWindow("A user with this name is already in the chat");
+                    view.errorDialogWindow("A user with this name is already sign in!");
                     disableClient();
                     break;
                 }
                 if (message.getTypeMessage() == MessageType.NICKNAME_ACCEPTED) {
-                    view.addMessage(String.format("Your name is accepted (%s)\n", nickname));
                     model.setUsersOnline(message.getListUsers());
                     break;
                 }
@@ -78,7 +78,6 @@ public class ClientController {
                     processOfDialogHistory(message);
                 }
                 else if(message.getTypeMessage() == MessageType.ALL_USERS){
-                    System.out.println(message.getTextMessage());
                     addAllUsers(message);
                 }
                 else if (message.getTypeMessage() == MessageType.USER_ADDED) {
@@ -110,7 +109,7 @@ public class ClientController {
 
     protected void addAllUsers(Message message){
         String[] strings = message.getTextMessage().split("\n");
-        Set<String> users = (new HashSet(Arrays.asList(strings)));
+        Set<String> users = new HashSet(Arrays.asList(strings));
         users.remove(nickname);
         model.setAllUsers(users);
         view.refreshListUsers(model.getAllUsers());
@@ -118,12 +117,10 @@ public class ClientController {
 
     protected void addUserToOnline(Message message) {
         model.addUserToOnline(message.getTextMessage());
-//        view.refreshListUsers(model.getUsersOnline());
     }
 
     protected void deleteUserFromOnline(Message message) {
         model.removeUserFromOnline(message.getTextMessage());
-//        view.refreshListUsers(model.getUsersOnline());
     }
 
     protected void processingOfPrivateMessagesForReceiving(Message message) {
@@ -148,7 +145,8 @@ public class ClientController {
                 model.getUsersOnline().clear();
                 clientConnected = false;
                 view.refreshListUsers(model.getUsersOnline());
-                view.addMessage("You have disconnected from the server.\n");
+                view.disableClient();
+
             } else {
                 view.errorDialogWindow("You are already disconnected.");
             }
@@ -157,16 +155,16 @@ public class ClientController {
         }
     }
 
-    protected void connectToServer() {
+    protected void connectClient() {
         if (!clientConnected) {
             while (true) {
                 try {
                     connection = new Network(new Socket(view.getServerAddress(), view.getPort()));
                     clientConnected = true;
-                    view.addMessage("You have connected to the server.\n");
+                    view.setTitle(Config.CLIENT_TITLE +  " (" + nickname + ")");
                     break;
                 } catch (Exception e) {
-                    view.errorDialogWindow("An error has occurred! Perhaps you entered the wrong server address or port. try again");
+                    view.errorDialogWindow("Server doesn't work!");
                     break;
                 }
             }

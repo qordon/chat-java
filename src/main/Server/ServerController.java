@@ -14,15 +14,15 @@ import java.util.Map;
 import java.util.Set;
 
 public class ServerController {
-    private ServerView gui;
+    private ServerView view;
     private ServerModel model;
     private ServerSocket serverSocket;
     private volatile boolean isServerStart;
 
     public void run() {
-        gui = new ServerView(this);
+        view = new ServerView(this);
         model = new ServerModel();
-        gui.initComponents();
+        view.initComponents();
         while (true) {
             if (isServerStart) {
                 this.acceptServer();
@@ -35,9 +35,9 @@ public class ServerController {
         try {
             serverSocket = new ServerSocket(port);
             isServerStart = true;
-            gui.refreshDialogWindowServer("Server started.\n");
+            view.refreshDialogWindowServer("Server started.\n");
         } catch (Exception e) {
-            gui.refreshDialogWindowServer("Server failed to start.\n");
+            view.refreshDialogWindowServer("Server failed to start.\n");
         }
     }
 
@@ -50,12 +50,12 @@ public class ServerController {
                 serverSocket.close();
                 model.getUsersOnline().clear();
                 isServerStart = false;
-                gui.refreshDialogWindowServer("Server stopped.\n");
+                view.refreshDialogWindowServer("Server stopped.\n");
             } else {
-                gui.refreshDialogWindowServer("The server is not running - there is nothing to stop!\n");
+                view.refreshDialogWindowServer("The server is not running - there is nothing to stop!\n");
             }
         } catch (Exception e) {
-            gui.refreshDialogWindowServer("Server could not be stopped.\n");
+            view.refreshDialogWindowServer("Server could not be stopped.\n");
         }
     }
 
@@ -64,7 +64,7 @@ public class ServerController {
             try {
                 new ServerThread(serverSocket.accept()).start();
             } catch (Exception e) {
-                gui.refreshDialogWindowServer("Server connection lost.\n");
+                view.refreshDialogWindowServer("Server connection lost.\n");
                 break;
             }
         }
@@ -75,7 +75,7 @@ public class ServerController {
             try {
                 user.getValue().send(message);
             } catch (Exception e) {
-                gui.refreshDialogWindowServer("Error sending message to all users!\n");
+                view.refreshDialogWindowServer("Error sending message to all users!\n");
             }
         }
     }
@@ -88,7 +88,7 @@ public class ServerController {
                     user.getValue().send(message);
                 }
             } catch (Exception e) {
-                gui.refreshDialogWindowServer("Error sending message to user!\n");
+                view.refreshDialogWindowServer("Error sending message to user!\n");
             }
         }
     }
@@ -100,7 +100,7 @@ public class ServerController {
                     user.getValue().send(new Message(MessageType.DIALOG_HISTORY, history, from, null));
                 }
             } catch (Exception e) {
-                gui.refreshDialogWindowServer("Error sending message to user!\n");
+                view.refreshDialogWindowServer("Error sending message to user!\n");
             }
         }
     }
@@ -137,7 +137,7 @@ public class ServerController {
                         connection.send(new Message(MessageType.NICKNAME_USED));
                     }
                 } catch (Exception e) {
-                    gui.refreshDialogWindowServer("There was an error requesting and adding a new user\n");
+                    view.refreshDialogWindowServer("There was an error requesting and adding a new user\n");
                     return null;
                 }
             }
@@ -162,7 +162,7 @@ public class ServerController {
                         sendDialogHistory(output.toString(), nickname);
                     }
                 } catch (Exception e) {
-                    gui.refreshDialogWindowServer(String.format("An error occurred while sending a message from the user %s, either disconnected!\n", nickname));
+                    view.refreshDialogWindowServer(String.format("An error occurred while sending a message from the user %s, either disconnected!\n", nickname));
                     model.removeUserFromOnline(nickname);
                     break;
                 }
@@ -174,18 +174,18 @@ public class ServerController {
             sendMessageAllUsers(new Message(MessageType.REMOVED_USER, nickname));
             model.removeUserFromOnline(nickname);
             network.close();
-            gui.refreshDialogWindowServer(String.format("Remote access user %s disconnected.\n", socket.getRemoteSocketAddress()));
+            view.refreshDialogWindowServer(String.format("Remote access user %s disconnected.\n", socket.getRemoteSocketAddress()));
         }
 
         @Override
         public void run() {
 
-            gui.refreshDialogWindowServer(String.format("A new user connected with a remote socket - %s.\n", socket.getRemoteSocketAddress()));
+            view.refreshDialogWindowServer(String.format("A new user connected with a remote socket - %s.\n", socket.getRemoteSocketAddress()));
             try {
                 Network connection = new Network(socket);
                 messagingBetweenUsers(connection, requestAndAddingUser(connection));
             } catch (Exception e) {
-                gui.refreshDialogWindowServer("An error occurred while sending a message from the user!\n");
+                view.refreshDialogWindowServer("An error occurred while sending a message from the user!\n");
             }
         }
 
